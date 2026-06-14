@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LandSplit Analytics</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBlMGYxMSIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXdlaWdodD0iYm9sZCIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2M4ZjEzNSI+TFM8L3RleHQ+PC9zdmc+"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:Arial,sans-serif;background:#0e0f11;color:#e8eaf0;display:flex;flex-direction:column;}
+
+/* LOGIN */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0e0f11;z-index:9999;}
+.lbox{background:#16181d;border:1px solid #2a2d35;border-radius:10px;padding:40px;text-align:center;width:320px;}
+.lbox h1{color:#c8f135;font-size:20px;margin-bottom:8px;}
+.lbox p{color:#6b7280;font-size:14px;margin-bottom:20px;}
+.lbox input{width:100%;padding:10px;background:#0e0f11;border:1px solid #2a2d35;border-radius:6px;color:#e8eaf0;font-size:14px;margin-bottom:10px;outline:none;}
+.lbox input:focus{border-color:#c8f135;}
+#lerr{color:#ef4444;font-size:12px;margin-top:6px;display:none;}
+
+/* TOPBAR */
+#topbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#16181d;border-bottom:1px solid #2a2d35;flex-shrink:0;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+#topbar h2{color:#c8f135;font-size:15px;margin:0;}
+.fav-toggle{background:transparent;border:1px solid #2a2d35;border-radius:6px;color:#9ca3af;font-size:12px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.fav-toggle.active{border-color:#f59e0b;color:#f59e0b;}
+
+/* BUTTONS */
+.btn{background:#c8f135;color:#0e0f11;border:none;border-radius:6px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px;width:100%;}
+.btn:hover{opacity:0.88;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.sec{background:transparent!important;color:#c8f135!important;border:1px solid #c8f135!important;width:auto!important;padding:7px 14px!important;}
+
+/* MAIN LAYOUT */
+#wrap{display:flex;flex:1;height:calc(100vh - 44px);}
+#sidebar{width:370px;min-width:370px;flex-shrink:0;background:#16181d;border-right:1px solid #2a2d35;display:flex;flex-direction:column;overflow:hidden;}
+
+/* INPUT AREA */
+#inp{padding:12px;border-bottom:1px solid #2a2d35;flex-shrink:0;}
+#inp label{font-size:10px;color:#6b7280;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:6px;}
+textarea{width:100%;height:80px;background:#0e0f11;border:1px solid #2a2d35;border-radius:6px;color:#e8eaf0;font-size:12px;padding:8px;resize:none;outline:none;line-height:1.5;font-family:Arial,sans-serif;}
+textarea:focus{border-color:#c8f135;}
+#runbtn{margin-top:8px;}
+
+/* FILTER/SORT BAR */
+#filterbar{padding:8px 10px;border-bottom:1px solid #2a2d35;flex-shrink:0;display:flex;flex-direction:column;gap:6px;}
+.filter-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.filter-label{font-size:10px;color:#6b7280;white-space:nowrap;margin-right:2px;}
+.pill{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid #2a2d35;background:transparent;color:#9ca3af;cursor:pointer;white-space:nowrap;}
+.pill:hover{border-color:#555;color:#e8eaf0;}
+.pill.active{background:#c8f135;color:#0e0f11;border-color:#c8f135;font-weight:700;}
+.sort-select{font-size:11px;background:#0e0f11;border:1px solid #2a2d35;color:#9ca3af;border-radius:4px;padding:3px 6px;cursor:pointer;outline:none;}
+.sort-select:focus{border-color:#c8f135;}
+
+/* STATUS/ERROR */
+#sb{padding:6px 12px;font-size:12px;color:#9ca3af;border-bottom:1px solid #2a2d35;display:none;flex-shrink:0;}
+#eb{padding:6px 12px;font-size:12px;color:#fca5a5;background:#450a0a;border-bottom:1px solid #7f1d1d;display:none;flex-shrink:0;}
+
+/* CARDS */
+#cards{flex:1;overflow-y:auto;padding:8px;}
+.emp{color:#6b7280;font-size:13px;text-align:center;padding:20px 8px;line-height:1.6;}
+.card{background:#111827;border:1px solid #2a2d35;border-radius:8px;padding:11px;margin-bottom:7px;cursor:pointer;transition:border-color 0.1s;position:relative;}
+.card:hover{border-color:#555;}
+.card.sel{border-color:#c8f135;}
+.card.is-fav{border-color:#f59e0b44;}
+.card-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
+.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.ca{font-size:12px;font-weight:700;flex:1;line-height:1.3;}
+.bdg{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+
+/* DEAL SCORE BADGE */
+.deal-badge{position:absolute;top:10px;right:40px;font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;white-space:nowrap;}
+.deal-excellent{background:#14532d;color:#86efac;border:1px solid #166534;}
+.deal-good{background:#713f12;color:#fde68a;border:1px solid #a16207;}
+.deal-fair{background:#1e3a8a;color:#93c5fd;border:1px solid #1e40af;}
+.deal-poor{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;}
+
+/* STAR BUTTON */
+.star-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:0;color:#4b5563;}
+.star-btn.starred{color:#f59e0b;}
+.star-btn:hover{transform:scale(1.2);}
+
+.st{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px;}
+.s{font-size:10px;color:#6b7280;line-height:1.4;}
+.s strong{display:block;font-size:12px;color:#e8eaf0;}
+.pb{border-radius:5px;padding:7px 9px;font-size:11px;line-height:1.5;margin-bottom:7px;}
+.ph{background:#1c1500;border:1px solid #713f12;color:#fde68a;}
+.po{background:#0a1a0f;border:1px solid #166534;color:#86efac;}
+.pn{background:#111827;border:1px solid #374151;color:#9ca3af;}
+
+/* PROFIT BOX */
+.profit-box{background:#0f172a;border:1px solid #1e3a8a;border-radius:5px;padding:8px;margin-bottom:7px;}
+.profit-title{font-size:10px;color:#60a5fa;margin-bottom:4px;font-weight:700;}
+.profit-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;}
+.profit-label{color:#6b7280;}
+.profit-value{color:#e8eaf0;font-weight:600;}
+.profit-total{font-size:12px;font-weight:700;color:#86efac;margin-top:4px;padding-top:4px;border-top:1px solid #1e3a8a;}
+
+/* PLAN DOCS */
+.plan-docs{margin-bottom:7px;}
+.plan-name{font-size:10px;color:#9ca3af;margin-bottom:4px;}
+.doc-links{display:flex;gap:4px;flex-wrap:wrap;}
+.doc-btn{font-size:10px;padding:3px 8px;border-radius:4px;background:#1e2433;border:1px solid #374151;color:#60a5fa;cursor:pointer;text-decoration:none;display:inline-block;}
+.doc-btn:hover{background:#253047;border-color:#60a5fa;}
+
+.ml{font-size:11px;color:#60a5fa;text-decoration:none;display:block;margin-bottom:5px;}
+.ml:hover{text-decoration:underline;}
+.mr{display:flex;align-items:center;gap:5px;padding-top:7px;border-top:1px solid #2a2d35;flex-wrap:wrap;}
+.mr label{font-size:10px;color:#6b7280;white-space:nowrap;}
+.mr input{width:72px;padding:3px 7px;background:#0e0f11;border:1px solid #2a2d35;border-radius:4px;color:#e8eaf0;font-size:11px;outline:none;}
+.mr input:focus{border-color:#c8f135;}
+.mb{padding:3px 10px;font-size:11px;background:#c8f135;color:#0e0f11;border:none;border-radius:4px;cursor:pointer;font-weight:700;}
+
+/* LEGEND */
+#leg{padding:8px 12px;border-top:1px solid #2a2d35;display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0;}
+.lg{display:flex;align-items:center;gap:4px;font-size:10px;color:#6b7280;}
+.ld{width:9px;height:9px;border-radius:50%;}
+
+/* MAP */
+#map{flex:1;background:#1a1a2e;}
+.leaflet-popup-content-wrapper{background:#16181d!important;color:#e8eaf0!important;border:1px solid #2a2d35!important;border-radius:8px!important;font-family:Arial,sans-serif!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important;}
+.leaflet-popup-tip{background:#16181d!important;}
+.pt{font-size:13px;font-weight:700;display:block;margin-bottom:6px;color:#c8f135;}
+.pr{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;gap:12px;}
+.pl{color:#6b7280;}
+
+/* STAR MARKER */
+.star-marker{font-size:24px;line-height:1;text-align:center;color:#f59e0b;text-shadow:0 0 3px rgba(0,0,0,0.8),-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lbox">
+    <h1>LandSplit Pro ⬡</h1>
+    <p>Ange lösenord</p>
+    <input type="password" id="pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn" onclick="doLogin()">Logga in</button>
+    <div id="lerr">Fel lösenord.</div>
+  </div>
+</div>
+
+<div id="topbar">
+  <div class="topbar-left">
+    <h2>LandSplit Analytics</h2>
+    <button class="fav-toggle" id="fav-toggle" onclick="toggleFavView()">⭐ Favoriter</button>
+    <button class="fav-toggle" id="wms-toggle" onclick="toggleWMS()" style="margin-left:6px;">🗺 Detaljplaner</button>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn sec" onclick="exportToCSV()">📊 Exportera CSV</button>
+    <button class="btn sec" onclick="doClear()">Rensa</button>
+  </div>
+</div>
+
+<div id="wrap">
+  <div id="sidebar">
+    <div id="inp">
+      <label>Klistra in text</label>
+      <textarea id="txt" placeholder="Klistra in text från Hemnet, e-post mm..."></textarea>
+      <button class="btn" id="runbtn" onclick="doRun()">▶ Kör analys</button>
+    </div>
+
+    <div id="filterbar">
+      <div class="filter-row">
+        <span class="filter-label">Visa:</span>
+        <button class="pill active" data-filter="alla" onclick="setFilter('alla')">Alla</button>
+        <button class="pill" data-filter="delbar" onclick="setFilter('delbar')">Troligen delbar</button>
+        <button class="pill" data-filter="gransfall" onclick="setFilter('gransfall')">Gränsfall</button>
+        <button class="pill" data-filter="saknas" onclick="setFilter('saknas')">Saknar data</button>
+        <button class="pill" data-filter="deals" onclick="setFilter('deals')">🔥 Topphits</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Sortera:</span>
+        <select class="sort-select" id="sort-select" onchange="applySort()">
+          <option value="default">Standard</option>
+          <option value="deal-score">🎯 Bästa affärer först</option>
+          <option value="profit-desc">Vinst potential ↓</option>
+          <option value="price-asc">Pris ↑</option>
+          <option value="price-desc">Pris ↓</option>
+          <option value="plot-asc">Tomt ↑</option>
+          <option value="plot-desc">Tomt ↓</option>
+          <option value="ppm-asc">Kr/m² ↑</option>
+          <option value="ppm-desc">Kr/m² ↓</option>
+          <option value="status">Status (delbar först)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="sb"></div>
+    <div id="eb"></div>
+    <div id="cards"><div class="emp">Klistra in text och tryck Kör analys.</div></div>
+
+    <div id="leg">
+      <div class="lg"><div class="ld" style="background:#39ff14"></div>Troligen delbar</div>
+      <div class="lg"><div class="ld" style="background:#ffae00"></div>Gränsfall</div>
+      <div class="lg"><div class="ld" style="background:#ff2d2d"></div>Inte delbar</div>
+      <div class="lg"><div class="ld" style="background:#555"></div>Saknar data</div>
+      <div class="lg"><span style="font-size:14px;color:#f59e0b;">⭐</span>Favorit</div>
+    </div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<!-- PDF PREVIEW PANEL -->
+<div id="pdfpanel" style="display:none;position:fixed;top:0;right:0;width:480px;height:100vh;background:#16181d;border-left:1px solid #2a2d35;z-index:1000;display:none;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #2a2d35;flex-shrink:0;">
+    <div id="pdf-title" style="font-size:13px;font-weight:700;color:#c8f135;"></div>
+    <button onclick="closePDF()" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;line-height:1;">×</button>
+  </div>
+  <div id="pdf-tabs" style="flex:1;overflow-y:auto;"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var map=null, mLayer=null, favLayer=null;
+var allE=[], ov={}, mkC={}, geoC={}, ngpMin={}, ngpPlan={}, ngpDocs={}, ngpAssets={};
+var favs={};
+var showFavOnly=false;
+var currentFilter='alla';
+var CLR={green:'#39ff14',orange:'#ffae00',red:'#ff2d2d',grey:'#555555'};
+var FAV_CLR='#f59e0b';
+
+console.log('=== LandSplit Analytics Pro v4 + Kommun Detection ===');
+
+/* ══════════════════════════════════════════════════════════════════════════
+   KOMMUN DETECTION - Added for multi-municipality support
+   ══════════════════════════════════════════════════════════════════════════ */
+var STOCKHOLM_KOMMUNER = {
+  'botkyrka': {name: 'Botkyrka kommun', code: '0127'}, 
+  'danderyd': {name: 'Danderyds kommun', code: '0162'}, 
+  'ekerö': {name: 'Ekerö kommun', code: '0125'},
+  'haninge': {name: 'Haninge kommun', code: '0136'}, 
+  'huddinge': {name: 'Huddinge kommun', code: '0126'}, 
+  'järfälla': {name: 'Järfälla kommun', code: '0123'},
+  'lidingö': {name: 'Lidingö kommun', code: '0186'}, 
+  'nacka': {name: 'Nacka kommun', code: '0182'}, 
+  'norrtälje': {name: 'Norrtälje kommun', code: '0188'},
+  'nykvarn': {name: 'Nykvarns kommun', code: '0140'}, 
+  'nynäshamn': {name: 'Nynäshamns kommun', code: '0192'}, 
+  'salem': {name: 'Salems kommun', code: '0128'},
+  'sigtuna': {name: 'Sigtuna kommun', code: '0191'}, 
+  'sollentuna': {name: 'Sollentuna kommun', code: '0163'}, 
+  'solna': {name: 'Solna kommun', code: '0184'},
+  'stockholm': {name: 'Stockholms kommun', code: '0180'}, 
+  'sundbyberg': {name: 'Sundbybergs kommun', code: '0183'}, 
+  'södertälje': {name: 'Södertälje kommun', code: '0181'}, 
+  'tyresö': {name: 'Tyresö kommun', code: '0138'}, 
+  'täby': {name: 'Täby kommun', code: '0160'},
+  'upplands-bro': {name: 'Upplands-Bro kommun', code: '0139'}, 
+  'upplands väsby': {name: 'Upplands Väsby kommun', code: '0114'},
+  'upplands-väsby': {name: 'Upplands Väsby kommun', code: '0114'}, 
+  'vallentuna': {name: 'Vallentuna kommun', code: '0115'},
+  'vaxholm': {name: 'Vaxholms kommun', code: '0187'}, 
+  'värmdö': {name: 'Värmdö kommun', code: '0120'}, 
+  'österåker': {name: 'Österåkers kommun', code: '0117'}
+};
+
+function detectKommunFromText(text) {
+  if (!text) return 'Värmdö kommun';
+  var normalized = text.toLowerCase().replace(/\s+/g, ' ').trim();
+  
+  for (var key in STOCKHOLM_KOMMUNER) {
+    var kommun = STOCKHOLM_KOMMUNER[key];
+    var kommunName = kommun.name;
+    
+    if (normalized.indexOf(kommunName.toLowerCase()) !== -1) {
+      console.log('[KOMMUN] Found exact match:', kommunName);
+      return kommunName;
+    }
+    var baseNameWithoutKommun = kommunName.replace(' kommun', '').toLowerCase();
+    if (normalized.indexOf(baseNameWithoutKommun) !== -1) {
+      console.log('[KOMMUN] Found match (base name):', kommunName);
+      return kommunName;
+    }
+    if (normalized.indexOf(key) !== -1) {
+      console.log('[KOMMUN] Found match (key):', kommunName);
+      return kommunName;
+    }
+  }
+  
+  console.log('[KOMMUN] No match found, using default: Värmdö kommun');
+  return 'Värmdö kommun';
+}
+
+function getKommunCode(kommunName) {
+  // Convert kommun name to code
+  var normalized = kommunName.toLowerCase().replace(' kommun', '').trim();
+  
+  for (var key in STOCKHOLM_KOMMUNER) {
+    var kommun = STOCKHOLM_KOMMUNER[key];
+    if (kommun.name.toLowerCase() === kommunName.toLowerCase() || 
+        kommun.name.toLowerCase().replace(' kommun', '') === normalized ||
+        key === normalized) {
+      return kommun.code;
+    }
+  }
+  
+  return '0120'; // Default to Värmdö
+}
+
+function detectKommunFromCoordinates(lat, lon, callback) {
+  var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=10&addressdetails=1';
+  
+  fetch(url, { headers: {'User-Agent': 'LandSplit/1.0'} })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    console.log('[KOMMUN] Nominatim response:', data);
+    
+    if (data && data.address) {
+      var municipality = data.address.municipality || data.address.town || data.address.city || data.address.county;
+      
+      if (municipality) {
+        console.log('[KOMMUN] Found municipality:', municipality);
+        var detected = detectKommunFromText(municipality);
+        callback(detected);
+        return;
+      }
+    }
+    
+    console.log('[KOMMUN] Could not detect from coordinates, using default');
+    callback('Värmdö kommun');
+  })
+  .catch(function(err) {
+    console.log('[KOMMUN] Geocoding error:', err);
+    callback('Värmdö kommun');
+  });
+}
+
+
+/* ── PRICE BASELINES ── */
+var MB={
+  'täby':{b:6500,n:'Täby'},'nacka':{b:8500,n:'Nacka'},'lidingö':{b:9000,n:'Lidingö'},
+  'solna':{b:7500,n:'Solna'},'stockholm':{b:9500,n:'Stockholm'},'danderyd':{b:9000,n:'Danderyd'},
+  'sundbyberg':{b:7000,n:'Sundbyberg'},'järfälla':{b:5500,n:'Järfälla'},'huddinge':{b:5000,n:'Huddinge'},
+  'haninge':{b:4000,n:'Haninge'},'tyresö':{b:5500,n:'Tyresö'},'värmdö':{b:5000,n:'Värmdö'},
+  'ekerö':{b:5000,n:'Ekerö'},'österåker':{b:4500,n:'Österåker'},'vaxholm':{b:6000,n:'Vaxholm'},
+  'norrtälje':{b:3500,n:'Norrtälje'},'sigtuna':{b:3500,n:'Sigtuna'},
+  'upplands-bro':{b:3000,n:'Upplands-Bro'},'södertälje':{b:3000,n:'Södertälje'},
+  'nynäshamn':{b:3000,n:'Nynäshamn'}
+};
+function getMuni(a){var l=a.toLowerCase();for(var k in MB){if(l.indexOf(k)!==-1)return MB[k];}return{b:6000,n:'Stockholmsregionen'};}
+function fmt(p){if(!p)return'–';return p>=1e6?(p/1e6).toFixed(2).replace('.',',')+' mnkr':Number(p).toLocaleString('sv-SE')+' kr';}
+function ppm(e){return e.price&&e.plotSize?Math.round(e.price/e.plotSize):null;}
+
+/* ── FAVOURITES ── */
+function loadFavs(){try{var s=localStorage.getItem('ls_favs');if(s)favs=JSON.parse(s);}catch(e){favs={};}}
+function saveFavs(){try{localStorage.setItem('ls_favs',JSON.stringify(favs));}catch(e){}}
+function isFav(addr){return !!favs[addr];}
+function toggleFav(ev,btn){
+  ev.stopPropagation();
+  var addr=btn.getAttribute('data-addr');
+  if(favs[addr])delete favs[addr]; else favs[addr]=true;
+  saveFavs();
+  btn.textContent=isFav(addr)?'⭐':'☆';
+  btn.style.color=isFav(addr)?'#f59e0b':'#4b5563';
+  var card=btn.closest?btn.closest('.card'):btn.parentElement.parentElement.parentElement;
+  if(card){if(isFav(addr))card.classList.add('is-fav');else card.classList.remove('is-fav');}
+  updateFavMarkers();
+}
+function toggleFavView(){
+  showFavOnly=!showFavOnly;
+  var btn=document.getElementById('fav-toggle');
+  btn.className='fav-toggle'+(showFavOnly?' active':'');
+  renderCards();
+}
+
+function updateFavMarkers(){
+  if(!favLayer)return;
+  favLayer.clearLayers();
+  for(var addr in favs){
+    if(!favs[addr])continue;
+    var geo=geoC[addr];
+    if(!geo)continue;
+    var inCurrent=false;
+    for(var i=0;i<allE.length;i++){if(allE[i].address===addr){inCurrent=true;break;}}
+    if(!inCurrent){
+      var icon=L.divIcon({
+        className:'',
+        html:'<div class="star-marker">⭐</div>',
+        iconSize:[24,24],
+        iconAnchor:[12,24]
+      });
+      var mk=L.marker([geo.lat,geo.lon],{icon:icon}).addTo(favLayer);
+      mk.bindPopup('<span class="pt">⭐ '+addr+'</span><div class="pr"><span class="pl">Favorit</span></div>',{maxWidth:200});
+    }
+  }
+}
+
+/* ── PROFIT CALCULATOR ── */
+function calculateDealMetrics(e, minSize, muniBaseline) {
+  if(!e.price || !e.plotSize || !minSize) return null;
+  
+  var splitPotential = Math.floor(e.plotSize / minSize);
+  if(splitPotential < 2) return null;
+  
+  var marketPricePerM2 = muniBaseline || 6000;
+  var totalValueIfSplit = splitPotential * minSize * marketPricePerM2;
+  
+  var profitPotential = totalValueIfSplit - e.price;
+  var profitPercent = (profitPotential / e.price) * 100;
+  
+  var dealScore = 0;
+  if(profitPercent > 50) dealScore = 100;
+  else if(profitPercent > 30) dealScore = 80;
+  else if(profitPercent > 15) dealScore = 60;
+  else if(profitPercent > 5) dealScore = 40;
+  else if(profitPercent > 0) dealScore = 20;
+  
+  if(splitPotential >= 3) dealScore = Math.min(100, dealScore + 15);
+  if(splitPotential >= 4) dealScore = Math.min(100, dealScore + 10);
+  
+  var currentPricePerM2 = e.price / e.plotSize;
+  if(currentPricePerM2 > marketPricePerM2 * 1.2) dealScore = Math.max(0, dealScore - 20);
+  
+  return {
+    splitPotential: splitPotential,
+    totalValueIfSplit: totalValueIfSplit,
+    profitPotential: profitPotential,
+    profitPercent: profitPercent,
+    dealScore: dealScore,
+    dealRating: dealScore >= 80 ? 'excellent' : dealScore >= 60 ? 'good' : dealScore >= 40 ? 'fair' : 'poor'
+  };
+}
+
+/* ── FILTER & SORT ── */
+function setFilter(f){
+  currentFilter=f;
+  document.querySelectorAll('.pill').forEach(function(p){
+    p.className='pill'+(p.getAttribute('data-filter')===f?' active':'');
+  });
+  renderCards();
+}
+function applySort(){renderCards();}
+function statusOrder(e){
+  var a=assess(e.plotSize,ov[e.address]||ngpMin[e.address],e.address);
+  if(a.c==='green')return 0;
+  if(a.c==='orange')return 1;
+  if(a.c==='red')return 2;
+  return 3;
+}
+function getDealScore(e){
+  var mn=ov[e.address]||ngpMin[e.address];
+  if(!mn)return 0;
+  var mu=getMuni(e.address);
+  var metrics=calculateDealMetrics(e,mn,mu.b);
+  return metrics?metrics.dealScore:0;
+}
+function getSortedFiltered(entries){
+  var list=entries.slice();
+  if(showFavOnly) list=list.filter(function(e){return isFav(e.address);});
+  if(currentFilter==='delbar') list=list.filter(function(e){return assess(e.plotSize,ov[e.address]||ngpMin[e.address],e.address).c==='green';});
+  if(currentFilter==='gransfall') list=list.filter(function(e){var a=assess(e.plotSize,ov[e.address]||ngpMin[e.address],e.address);return a.c==='orange';});
+  if(currentFilter==='saknas') list=list.filter(function(e){return assess(e.plotSize,ov[e.address]||ngpMin[e.address],e.address).c==='grey';});
+  if(currentFilter==='deals') list=list.filter(function(e){return getDealScore(e)>=60;});
+  var sortVal=document.getElementById('sort-select');
+  var s=sortVal?sortVal.value:'default';
+  if(s==='price-asc') list.sort(function(a,b){return (a.price||0)-(b.price||0);});
+  if(s==='price-desc') list.sort(function(a,b){return (b.price||0)-(a.price||0);});
+  if(s==='plot-asc') list.sort(function(a,b){return (a.plotSize||0)-(b.plotSize||0);});
+  if(s==='plot-desc') list.sort(function(a,b){return (b.plotSize||0)-(a.plotSize||0);});
+  if(s==='ppm-asc') list.sort(function(a,b){return (ppm(a)||0)-(ppm(b)||0);});
+  if(s==='ppm-desc') list.sort(function(a,b){return (ppm(b)||0)-(ppm(a)||0);});
+  if(s==='status') list.sort(function(a,b){return statusOrder(a)-statusOrder(b);});
+  if(s==='deal-score') list.sort(function(a,b){return getDealScore(b)-getDealScore(a);});
+  if(s==='profit-desc'){
+    list.sort(function(a,b){
+      var mA=ov[a.address]||ngpMin[a.address];
+      var mB=ov[b.address]||ngpMin[b.address];
+      var muA=getMuni(a.address),muB=getMuni(b.address);
+      var metricsA=calculateDealMetrics(a,mA,muA.b);
+      var metricsB=calculateDealMetrics(b,mB,muB.b);
+      var profitA=metricsA?metricsA.profitPotential:0;
+      var profitB=metricsB?metricsB.profitPotential:0;
+      return profitB-profitA;
+    });
+  }
+  return list;
+}
+function renderCards(){
+  var cl=document.getElementById('cards');
+  cl.innerHTML='';
+  var list=getSortedFiltered(allE);
+  if(!list.length){cl.innerHTML='<div class="emp">Inga objekt matchar filtret.</div>';return;}
+  list.forEach(function(e){
+    var geo=geoC[e.address]||null;
+    cl.appendChild(buildCard(e,geo,!geo));
+  });
+}
+
+/* WGS84 -> SWEREF99 TM - Based on Lantmäteriet's official implementation */
+function wgs84ToSweref(lat, lon) {
+  // SWEREF99 TM parameters
+  var axis = 6378137.0;
+  var flattening = 1.0/298.257222101;
+  var central_meridian = 15.0;
+  var scale = 0.9996;
+  var false_northing = 0.0;
+  var false_easting = 500000.0;
+
+  var e2 = flattening * (2.0 - flattening);
+  var n = flattening / (2.0 - flattening);
+  var a_roof = axis / (1.0 + n) * (1.0 + n*n/4.0 + n*n*n*n/64.0);
+
+  var phi = lat * Math.PI / 180.0;
+  var lambda = lon * Math.PI / 180.0;
+  var lambda0 = central_meridian * Math.PI / 180.0;
+
+  var phi_star = phi - Math.sin(phi) * Math.cos(phi) * 
+    (e2 + e2*e2 + e2*e2*e2 + e2*e2*e2*e2 + e2*e2*e2*e2*e2);
+  
+  var delta_lambda = lambda - lambda0;
+  var xi_prim = Math.atan(Math.tan(phi_star) / Math.cos(delta_lambda));
+  var eta_prim = Math.atanh(Math.cos(phi_star) * Math.sin(delta_lambda));
+
+  var beta1 = 1.0/2.0*n - 2.0/3.0*n*n + 5.0/16.0*n*n*n + 41.0/180.0*n*n*n*n;
+  var beta2 = 13.0/48.0*n*n - 3.0/5.0*n*n*n + 557.0/1440.0*n*n*n*n;
+  var beta3 = 61.0/240.0*n*n*n - 103.0/140.0*n*n*n*n;
+  var beta4 = 49561.0/161280.0*n*n*n*n;
+
+  var xi = xi_prim +
+    beta1 * Math.sin(2.0*xi_prim) * Math.cosh(2.0*eta_prim) +
+    beta2 * Math.sin(4.0*xi_prim) * Math.cosh(4.0*eta_prim) +
+    beta3 * Math.sin(6.0*xi_prim) * Math.cosh(6.0*eta_prim) +
+    beta4 * Math.sin(8.0*xi_prim) * Math.cosh(8.0*eta_prim);
+
+  var eta = eta_prim +
+    beta1 * Math.cos(2.0*xi_prim) * Math.sinh(2.0*eta_prim) +
+    beta2 * Math.cos(4.0*xi_prim) * Math.sinh(4.0*eta_prim) +
+    beta3 * Math.cos(6.0*xi_prim) * Math.sinh(6.0*eta_prim) +
+    beta4 * Math.cos(8.0*xi_prim) * Math.sinh(8.0*eta_prim);
+
+  var x = scale * a_roof * xi + false_northing;
+  var y = scale * a_roof * eta + false_easting;
+
+  return {E: Math.round(y), N: Math.round(x)};
+}
+
+/* ── NGP ── */
+var NGP_CLIENT_ID     = 'FwDm3E0EDaLbpXLXDPfKWQqgWeEa';
+var NGP_CLIENT_SECRET = '2zYvqMrqeOZOr6ehpKzrTMJQkvMa';
+var NGP_TOKEN_URL     = 'https://apimanager.lantmateriet.se/oauth2/token';
+var NGP_BASE_URL      = 'https://api.lantmateriet.se/distribution/geodatakatalog/sokning/v1/detaljplan/v2';
+var SWEREF_CRS        = 'http://www.opengis.net/def/crs/EPSG/0/3006';
+
+function pointInRing(px, py, ring) {
+  if (!ring || ring.length < 3) return false;
+  var inside = false;
+  for (var i=0, j=ring.length-1; i<ring.length; j=i++) {
+    var xi=ring[i][0], yi=ring[i][1];
+    var xj=ring[j][0], yj=ring[j][1];
+    var intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+function pointInGeometry(px, py, geom) {
+  if (!geom) return false;
+  if (geom.type==='Polygon') return pointInRing(px, py, geom.coordinates[0]);
+  if (geom.type==='MultiPolygon') return geom.coordinates.some(function(p){return pointInRing(px,py,p[0]);});
+  return false;
+}
+
+var MUNI_CODES = {
+  'stockholm':'0180','södertälje':'0181','nacka':'0182','sundbyberg':'0183',
+  'solna':'0184','lidingö':'0186','vaxholm':'0187','norrtälje':'0188',
+  'upplands-bro':'0139','upplands bro':'0139','sigtuna':'0191','österåker':'0117','värmdö':'0120',
+  'vindö':'0120','djurö':'0120','ingarö':'0120','gustavsberg':'0120','fågelvik':'0120','bodatorp':'0120',
+  'herrviksnäs':'0120','brunn':'0120','hemmesta':'0120','björkvik':'0120',
+  'kolvik':'0120','saltarö':'0120','strömma':'0120','evlinge':'0120',
+  'järfälla':'0123','ekerö':'0125','huddinge':'0126','botkyrka':'0127',
+  'salem':'0128','haninge':'0136','tyresö':'0138','täby':'0160',
+  'danderyd':'0162','sollentuna':'0163','vallentuna':'0115',
+  'upplands-väsby':'0114','upplands väsby':'0114','nykvarn':'0140','nynäshamn':'0192'
+};
+
+function getMuniCode(addr){
+  // First try to detect kommun name from address
+  var detectedKommun = detectKommunFromText(addr);
+  console.log('[NGP] Detected kommun from address:', detectedKommun);
+  
+  // Convert kommun name to code
+  var code = getKommunCode(detectedKommun);
+  if (code) {
+    console.log('[NGP] Found code:', code, 'for kommun:', detectedKommun);
+    return code;
+  }
+  
+  // Fallback to original logic
+  var l=addr.toLowerCase()
+    .replace(/\s+kommun\b/g,'')
+    .replace(/ö/g,'o').replace(/ä/g,'a').replace(/å/g,'a')
+    .trim();
+  
+  for(var k in MUNI_CODES){
+    if(l.indexOf(k)!==-1)return MUNI_CODES[k];
+  }
+  
+  for(var k in MUNI_CODES){
+    var normalized=k.replace(/ö/g,'o').replace(/ä/g,'a').replace(/å/g,'a');
+    if(l.indexOf(normalized)!==-1)return MUNI_CODES[k];
+  }
+  
+  console.log('[NGP] No municipality code found for:', addr);
+  return null;
+}
+
+var HEMNET_IDS={
+  'värmdö':'17818','täby':'17846','nacka':'17792','stockholm':'17744',
+  'solna':'17839','lidingö':'17764','danderyd':'17713','järfälla':'17749',
+  'huddinge':'17740','haninge':'17727','tyresö':'17850','österåker':'17862',
+  'vaxholm':'17853','norrtälje':'17799','sigtuna':'17835','ekerö':'17716',
+  'botkyrka':'17700','upplands-bro':'17852','södertälje':'17843',
+  'sollentuna':'17840','sundbyberg':'17844','salem':'17834','nykvarn':'17802',
+  'nynäshamn':'17803','upplands-väsby':'17851','vallentuna':'17854'
+};
+function getHemnetId(addr){var l=addr.toLowerCase();for(var k in HEMNET_IDS){if(l.indexOf(k)!==-1)return HEMNET_IDS[k];}return null;}
+
+var ngpToken=null, ngpTokenExpiry=0;
+function getNGPToken(cb){
+  console.log('[NGP-TOKEN] Checking token... current token:', ngpToken?'exists':'null', 'expiry:', new Date(ngpTokenExpiry));
+  if(ngpToken&&Date.now()<ngpTokenExpiry-60000){
+    console.log('[NGP-TOKEN] Using cached token');
+    cb(ngpToken);
+    return;
+  }
+  console.log('[NGP-TOKEN] Fetching new token from:', NGP_TOKEN_URL);
+  console.log('[NGP-TOKEN] Client ID:', NGP_CLIENT_ID);
+  console.log('[NGP-TOKEN] Starting fetch...');
+  
+  fetch(NGP_TOKEN_URL,{method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'grant_type=client_credentials&client_id='+NGP_CLIENT_ID+'&client_secret='+NGP_CLIENT_SECRET})
+  .then(function(r){
+    console.log('[NGP-TOKEN] Got response, status:', r.status);
+    return r.json();
+  })
+  .then(function(d){
+    console.log('[NGP-TOKEN] Token response:', d);
+    if(d.access_token){
+      ngpToken=d.access_token;
+      ngpTokenExpiry=Date.now()+(d.expires_in||3600)*1000;
+      console.log('[NGP-TOKEN] SUCCESS - Got new token, expires in', d.expires_in, 'seconds');
+      cb(ngpToken);
+    }
+    else{
+      console.log('[NGP-TOKEN] FAILED - No access_token in response');
+      cb(null);
+    }
+  }).catch(function(err){
+    console.log('[NGP-TOKEN] FETCH ERROR:', err);
+    cb(null);
+  });
+}
+
+
+function fetchNGP(url, token, cb) {
+  console.log('[NGP] Fetching:', url.substring(0,150)+'...');
+  fetch(url, {headers:{'Authorization':'Bearer '+token,'Accept':'application/geo+json'}})
+  .then(function(r){
+    if(!r.ok)return null;
+    var ct=r.headers.get('content-type')||'';
+    if(ct.indexOf('application/pdf')!==-1||ct.indexOf('pdf')!==-1){
+      console.log('[NGP] Response is PDF, returning URL');
+      return {isPDF:true,url:url};
+    }
+    return r.json();
+  })
+  .then(function(d){cb(d);})
+  .catch(function(err){console.log('[NGP] Fetch error:',err);cb(null);});
+}
+
+function searchNGP(lat, lon, addr, cb){
+  console.log('[NGP] === Starting search for:', addr, 'at', lat, lon);
+  
+  var code=getMuniCode(addr);
+  if(!code){
+    console.log('[NGP] FAILED: No municipality code for:', addr);
+    cb(null);
+    return;
+  }
+  console.log('[NGP] Municipality code:', code);
+  
+  console.log('[NGP] Calling getNGPToken...');
+  getNGPToken(function(token){
+    console.log('[NGP] getNGPToken returned, token:', token?'exists':'null');
+    if(!token){
+      console.log('[NGP] FAILED: No token');
+      cb(null);
+      return;
+    }
+    
+    var sw=wgs84ToSweref(lat,lon);
+    console.log('[NGP] SWEREF coords:', sw);
+    console.log('[NGP] Input WGS84:', lat, lon);
+
+    var d=250; // 250m radius = 500m x 500m search area
+    console.log('[NGP] Using dual API call strategy: detaljplan + bestämmelse with pagination');
+    
+    // Helper function to fetch all pages
+    function fetchAllPages(baseUrl, token, allFeatures, nextUrl, callback){
+      var url = nextUrl || baseUrl;
+      console.log('[NGP] Fetching page:', url.substring(0, 150));
+      
+      fetchNGP(url, token, function(data){
+        if(!data || !data.features){
+          callback(allFeatures);
+          return;
+        }
+        
+        allFeatures = allFeatures.concat(data.features);
+        console.log('[NGP] Fetched', data.features.length, 'features, total so far:', allFeatures.length);
+        
+        // Check for next page link
+        var nextLink = null;
+        if(data.links){
+          for(var i=0; i<data.links.length; i++){
+            if(data.links[i].rel === 'next'){
+              nextLink = data.links[i].href;
+              break;
+            }
+          }
+        }
+        
+        if(nextLink){
+          console.log('[NGP] Found next page link, continuing...');
+          setTimeout(function(){
+            fetchAllPages(baseUrl, token, allFeatures, nextLink, callback);
+          }, 100); // Small delay between requests
+        } else {
+          console.log('[NGP] No more pages, total features fetched:', allFeatures.length);
+          callback(allFeatures);
+        }
+      });
+    }
+    
+    // Call 1: Get ALL detaljplan features (for plan name and documents)
+    var urlDetaljplan=NGP_BASE_URL+'/collections/'+code+'/items'
+      +'?bbox='+(sw.E-d)+','+(sw.N-d)+','+(sw.E+d)+','+(sw.N+d)
+      +'&bbox-crs='+encodeURIComponent(SWEREF_CRS)
+      +'&limit=200';
+    
+    fetchAllPages(urlDetaljplan, token, [], null, function(allDpFeatures){
+      console.log('[NGP] Detaljplan pagination complete:', allDpFeatures.length, 'total features');
+      
+      // Call 2: Get ALL bestämmelse features (for minimum plot size)
+      var urlBestammelse=NGP_BASE_URL+'/collections/'+code+'/items'
+        +'?bbox='+(sw.E-d)+','+(sw.N-d)+','+(sw.E+d)+','+(sw.N+d)
+        +'&bbox-crs='+encodeURIComponent(SWEREF_CRS)
+        +'&limit=200';
+      
+      fetchAllPages(urlBestammelse, token, [], null, function(allPbFeatures){
+        console.log('[NGP] Bestämmelse pagination complete:', allPbFeatures.length, 'total features');
+        
+        // Merge the results
+        var allFeatures=[];
+        if(allDpFeatures && allDpFeatures.length) allFeatures = allFeatures.concat(allDpFeatures);
+        if(allPbFeatures && allPbFeatures.length) allFeatures = allFeatures.concat(allPbFeatures);
+        
+        console.log('[NGP] Combined total:', allFeatures.length, 'features');
+        
+        var mergedData={
+          type:'FeatureCollection',
+          features:allFeatures
+        };
+        
+        validateAndReturn(mergedData);
+      });
+    });
+    
+    function validateAndReturn(data){
+      console.log('[NGP] Got response, features:', data&&data.features?data.features.length:0);
+      
+      if(!data||!data.features||!data.features.length){
+        console.log('[NGP] No features in response');
+        cb(null);
+        return;
+      }
+
+      console.log('[NGP] First feature sample:', JSON.stringify(data.features[0]).substring(0,300));
+      
+      var dpFeatures=[], pbFeatures=[];
+      data.features.forEach(function(f){
+        var ft=(f.properties&&f.properties.feature&&f.properties.feature.typ)||'';
+        var hasPlanBest=!!(f.properties&&f.properties.planbestammelse);
+        var hasEgenskapsBest=!!(f.properties&&f.properties.egenskapsbestammelse);
+        console.log('[NGP] Feature type:', ft, 'Has planbestämmelse:', hasPlanBest, 'Has egenskapsbestämmelse:', hasEgenskapsBest);
+        
+        if(ft==='detaljplan'){
+          if(dpFeatures.length===0){
+            console.log('[NGP] First detaljplan feature:', JSON.stringify(f, null, 2).substring(0, 3000));
+          }
+          dpFeatures.push(f);
+        }
+        else if(f.properties&&(f.properties.planbestammelse||f.properties.egenskapsbestammelse)){
+          if(f.properties.planbestammelse){
+            console.log('[NGP] Found planbestämmelse!');
+            console.log('[NGP] planbestammelse data:', JSON.stringify(f.properties.planbestammelse, null, 2));
+          }
+          if(f.properties.egenskapsbestammelse)console.log('[NGP] Found egenskapsbestämmelse!');
+          pbFeatures.push(f);
+        }
+      });
+
+      console.log('[NGP] Detaljplan features:', dpFeatures.length, 'Bestämmelse features (plan+egenskap):', pbFeatures.length);
+
+      var uniqueNames={};
+      dpFeatures.forEach(function(f){
+        var n=((f.properties||{}).detaljplan||{}).namn;
+        if(n)uniqueNames[n]=true;
+      });
+      var nUnique=Object.keys(uniqueNames).length;
+      console.log('[NGP] Unique plan names:', nUnique);
+      console.log('[NGP] All plan names:', Object.keys(uniqueNames).join(', '));
+      
+      var hasSkeviksstrand=false;
+      for(var name in uniqueNames){
+        if(name.toLowerCase().indexOf('skeviksstrand')!==-1 || name.toLowerCase().indexOf('kovik')!==-1){
+          hasSkeviksstrand=true;
+          console.log('[NGP] ✓ Found Skeviksstrand plan:', name);
+        }
+      }
+      if(!hasSkeviksstrand){
+        console.log('[NGP] ✗ Skeviksstrand plan NOT in results - our coordinates are wrong!');
+      }
+
+      if(nUnique>20){
+        console.log('[NGP] Too many plans, filter likely ignored');
+        cb(null);return;
+      }
+
+      var validPlanIds={}, anyWithGeom=false;
+      dpFeatures.forEach(function(f){
+        var dp=(f.properties||{}).detaljplan||{};
+        var pid=(f.properties||{}).planidentitet||dp.beteckning||dp.namn||('plan_'+Math.random());
+        if(f.geometry&&f.geometry.coordinates&&f.geometry.coordinates.length){
+          anyWithGeom=true;
+          if(pointInGeometry(sw.E,sw.N,f.geometry)){
+            validPlanIds[pid]=true;
+            console.log('[NGP] Plan "'+dp.namn+'" PASSES PIP');
+          } else {
+            console.log('[NGP] Plan "'+dp.namn+'" FAILS PIP');
+          }
+        } else {
+          if(nUnique<=5){
+            validPlanIds[pid]=true;
+            console.log('[NGP] Plan "'+dp.namn+'" accepted (no geometry, few plans)');
+          }
+        }
+      });
+
+      if(anyWithGeom&&Object.keys(validPlanIds).length===0){
+        console.log('[NGP] All plans failed PIP - no valid detaljplan at this location');
+        cb(null);
+        return;
+      }
+
+      if(Object.keys(validPlanIds).length===0&&dpFeatures.length===0&&pbFeatures.length>0){
+        validPlanIds['anon']=true;
+        pbFeatures.forEach(function(f){
+          if(!f.properties)f.properties={};
+          if(!f.properties.planidentitet)f.properties.planidentitet='anon';
+        });
+        console.log('[NGP] Using bestämmelse features only (no detaljplan)');
+      }
+
+      var result={minSize:null,planNamn:null,beteckning:null,docs:[],planIdentitet:null};
+
+      // First pass: collect ALL links from ALL valid detaljplan features
+      var allLinks=[];
+      var domanobjektLinks=[];
+      
+      dpFeatures.forEach(function(f){
+        var dp=(f.properties||{}).detaljplan||{};
+        var pid=(f.properties||{}).planidentitet||dp.beteckning||dp.namn||'plan';
+        if(!validPlanIds[pid])return;
+        
+        if(!result.planNamn){
+          result.planNamn=dp.namn||dp.beteckning||null;
+          result.beteckning=dp.beteckning||null;
+          result.planIdentitet=f.id||f.properties.planidentitet||null;
+          console.log('[NGP] Using plan:', result.planNamn, 'ID:', result.planIdentitet);
+        }
+        
+        console.log('[NGP] Feature has', (f.links||[]).length, 'links');
+        (f.links||[]).forEach(function(l){
+          console.log('[NGP] Link - type:', l.type, 'rel:', l.rel, 'roles:', JSON.stringify(l.roles||null), 'title:', l.title||'(no title)', 'href:', l.href?l.href.substring(0,100):'NO');
+          allLinks.push(l);
+          
+          // Check for roles attribute (this is where documents might be!)
+          if(l.roles){
+            console.log('[NGP] ✓ Link has ROLES:', JSON.stringify(l.roles));
+            
+            // Check if it's the domänobjekt link
+            if(l.roles.includes('detaljplan')||l.roles.includes('data')){
+              domanobjektLinks.push(l);
+              console.log('[NGP] ★ Found domänobjekt link:', l.href);
+            }
+            
+            // Check for document roles
+            if(l.roles.includes('planbeskrivning')||l.roles.includes('planhandling')||
+               l.roles.includes('document')||l.roles.includes('illustration')){
+              console.log('[NGP] ★ Found document role:', l.roles, '→', l.href);
+              if(l.href&&l.type==='application/pdf'){
+                result.docs.push({title:l.title||'Dokument',href:l.href});
+                console.log('[NGP] ✓ Added document from roles:', l.title);
+              }
+            }
+          }
+          
+          // Also check for direct PDF links
+          if(l.href&&(l.type==='application/pdf'||l.href.toLowerCase().indexOf('.pdf')!==-1)){
+            result.docs.push({title:l.title||'Dokument',href:l.href});
+            console.log('[NGP] ✓ Added PDF document:', l.title);
+          }
+        });
+        
+        // Collect asset URLs to fetch
+        if(f.assets){
+          console.log('[NGP] Found assets:', JSON.stringify(f.assets).substring(0,200));
+          for(var assetKey in f.assets){
+            var asset=f.assets[assetKey];
+            if(asset.href){
+              // Try to extract a better title from the asset
+              var assetTitle=asset.title||'Detaljplan';
+              // Clean up the title if it's cut off
+              if(assetTitle==='Detaljpla')assetTitle='Detaljplan';
+              allLinks.push({type:'asset',href:asset.href,title:assetTitle});
+            }
+          }
+        }
+      });
+      
+      console.log('[NGP] Total links found:', allLinks.length, 'PDF documents found:', result.docs.length);
+      
+      // Store asset links for lazy loading (don't fetch yet)
+      var assetLinks=allLinks.filter(function(l){return l.type==='asset';});
+      console.log('[NGP] Asset links to store for lazy loading:', assetLinks.length);
+      
+      // Deduplicate asset links by href
+      var seenHrefs={};
+      var uniqueAssets=[];
+      assetLinks.forEach(function(link){
+        if(!seenHrefs[link.href]){
+          seenHrefs[link.href]=true;
+          uniqueAssets.push(link);
+        }
+      });
+      console.log('[NGP] Unique asset links after dedup:', uniqueAssets.length);
+      
+      // Store assets for lazy loading
+      result.assetLinks=uniqueAssets;
+      console.log('[NGP] ⚡ Skipping asset fetch - will load on demand');
+      
+      finishWithResult();
+      
+      function finishWithResult(){
+        console.log('[NGP] Final result - Plan:', result.planNamn, 'MinSize:', result.minSize, 'Docs:', result.docs.length);
+        
+        // Continue with the rest of the processing
+        console.log('[NGP] Processing', pbFeatures.length, 'bestämmelse features...');
+      var checkedCount=0, foundTomtCount=0;
+      var allTomtRules=[]; // Store all tomt rules with distances
+      var foundMatch=false; // Early exit flag
+      
+      pbFeatures.forEach(function(f){
+        if(foundMatch)return; // Early exit if we found a match
+        
+        var pid=(f.properties||{}).planidentitet||null;
+        if(pid&&!validPlanIds[pid])return;
+        
+        // Check BOTH planbestämmelse and egenskapsbestämmelse
+        var pb=(f.properties||{}).planbestammelse||(f.properties||{}).egenskapsbestammelse||{};
+        var bestType=(f.properties||{}).planbestammelse?'planbestämmelse':'egenskapsbestämmelse';
+        
+        var formulering=pb.bestammelseformulering||'';
+        var fl=formulering.toLowerCase();
+        var isMinTomt=fl.indexOf('tomtplats')!==-1||fl.indexOf('tomtstorlek')!==-1||
+          fl.indexOf('fastighetsstorlek')!==-1||fl.indexOf('minsta tomt')!==-1||
+          fl.indexOf('minsta fastighet')!==-1||fl.indexOf('tomtens areal')!==-1||
+          fl.indexOf('fastighetens areal')!==-1||fl.indexOf('minsta area')!==-1||
+          fl.indexOf('tomtens storlek')!==-1;
+        
+        if(!isMinTomt)return;
+        
+        foundTomtCount++;
+        console.log('[NGP] Found tomt '+bestType+' #'+foundTomtCount+':', formulering.substring(0,100));
+        
+        // Try to extract the size value
+        var extractedSize=null;
+        var varde=pb.bestammelsevarde;
+        console.log('[NGP] bestammelsevarde:', JSON.stringify(varde));
+        
+        if(varde){
+          var v=null;
+          if(varde.variabelvarde!=null){
+            v=parseFloat(varde.variabelvarde);
+            console.log('[NGP] Found variabelvarde:', v);
+          } else if(Array.isArray(varde)&&varde.length>0&&varde[0].variabelvarde!=null){
+            v=parseFloat(varde[0].variabelvarde);
+            console.log('[NGP] Found variabelvarde in array[0]:', v);
+          }
+          
+          if(v!=null&&!isNaN(v)){
+            var enhet=(varde.enhet||'');
+            if(Array.isArray(varde)&&varde.length>0){
+              enhet=varde[0].enhet||'';
+            }
+            console.log('[NGP] Checking unit:', enhet, 'for value:', v);
+            
+            var okEnhet=enhet.indexOf('meter')!==-1||enhet.indexOf('m2')!==-1||enhet.indexOf('m²')!==-1||enhet==='';
+            if(okEnhet&&v>=50&&v<=20000){
+              extractedSize=v;
+              console.log('[NGP] Extracted from variabelvarde:', v, 'with unit:', enhet);
+            } else {
+              console.log('[NGP] Rejected variabelvarde - okEnhet:', okEnhet, 'value range ok:', (v>=50&&v<=20000));
+            }
+          }
+        }
+        
+        if(!extractedSize){
+          var ex=extractSizeFromText(formulering);
+          if(ex){
+            extractedSize=ex;
+            console.log('[NGP] Extracted from text:', ex);
+          } else {
+            console.log('[NGP] Could not extract from text:', formulering);
+          }
+        }
+        
+        if(!extractedSize)return;
+        
+        // Calculate distance from point to this feature's geometry
+        var distance=999999;
+        var passedPIP=false;
+        if(f.geometry&&f.geometry.coordinates&&f.geometry.coordinates.length){
+          var ring=f.geometry.coordinates[0];
+          passedPIP=pointInGeometry(sw.E,sw.N,f.geometry);
+          
+          // Calculate minimum distance from point to any vertex of the polygon
+          var minDist=Infinity;
+          for(var vi=0;vi<ring.length;vi++){
+            var dx=ring[vi][0]-sw.E;
+            var dy=ring[vi][1]-sw.N;
+            var dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist<minDist)minDist=dist;
+          }
+          distance=minDist;
+          console.log('[NGP] '+bestType+' with size '+extractedSize+': PIP='+(passedPIP?'PASS':'FAIL')+', distance='+Math.round(distance)+'m');
+        } else {
+          console.log('[NGP] '+bestType+' with size '+extractedSize+': no geometry');
+        }
+        
+        allTomtRules.push({
+          size:extractedSize,
+          distance:distance,
+          passedPIP:passedPIP,
+          bestType:bestType,
+          formulering:formulering
+        });
+        
+        // Early exit if we found a rule that passes PIP
+        if(passedPIP){
+          foundMatch=true;
+          console.log('[NGP] ⚡ Early exit - found PIP match with size:', extractedSize);
+        }
+      });
+      
+      console.log('[NGP] Found', allTomtRules.length, 'tomt rules total');
+      
+      // Sort by: PIP passed first, then by distance
+      allTomtRules.sort(function(a,b){
+        if(a.passedPIP&&!b.passedPIP)return -1;
+        if(!a.passedPIP&&b.passedPIP)return 1;
+        return a.distance-b.distance;
+      });
+      
+      // Log all rules found
+      allTomtRules.forEach(function(rule,idx){
+        console.log('[NGP] Rule #'+(idx+1)+': size='+rule.size+'m², PIP='+(rule.passedPIP?'PASS':'FAIL')+', dist='+Math.round(rule.distance)+'m, type='+rule.bestType);
+      });
+      
+      // Pick the best one
+      if(allTomtRules.length>0){
+        result.minSize=allTomtRules[0].size;
+        console.log('[NGP] ✓✓✓ Selected minSize='+result.minSize+' (PIP='+(allTomtRules[0].passedPIP?'PASS':'FAIL')+', distance='+Math.round(allTomtRules[0].distance)+'m)');
+      }
+      
+      console.log('[NGP] Bestämmelse summary: checked='+checkedCount+', found tomt rules='+foundTomtCount+', extracted minSize='+result.minSize);
+
+      console.log('[NGP] === FINAL RESULT: plan='+result.planNamn+', minSize='+result.minSize+', docs='+result.docs.length);
+      cb(result);
+      } // end continueWithResult
+    }
+  });
+}
+
+function extractSizeFromText(text){
+  var t=(text||'').toLowerCase();
+  console.log('[EXTRACT] Attempting to extract from text:', t);
+  
+  var patterns=[
+    /(\d{3,6})\s*(?:kvadratmeter|kvm|m[\u00b22])/i,
+    /areal[^0-9]*(\d{3,6})/i,
+    /(?:minst|lägst|minsta|största)[^0-9]*(\d{3,6})/i,
+    /\bf\s+(\d{3,5})\b/i,
+    /storlek[^0-9]*(\d{3,6})/i,
+    /(\d{3,6})\s*m2/i,
+    /(\d{3,6})\s*kvadrat/i,
+    /(\d[\s]?\d{3})\s*(?:kvadratmeter|kvm|m[\u00b22]|m2)/i  // Handle space in thousands
+  ];
+  
+  for(var i=0;i<patterns.length;i++){
+    var m=t.match(patterns[i]);
+    if(m){
+      var rawVal=m[1].replace(/\s/g,'');  // Remove spaces
+      var v=parseInt(rawVal);
+      console.log('[EXTRACT] Pattern', i, 'matched:', m[0], '=> value:', v);
+      if(v>=50&&v<=20000){
+        console.log('[EXTRACT] ✓ Accepted value:', v);
+        return v;
+      } else {
+        console.log('[EXTRACT] ✗ Rejected value (out of range):', v);
+      }
+    }
+  }
+  console.log('[EXTRACT] No patterns matched');
+  return null;
+}
+
+function lookupNGPForAll(entries, done){
+  console.log('[NGP] Starting batch lookup for', entries.length, 'entries');
+  var sb=document.getElementById('sb');
+  sb.style.display='block';
+  var total=entries.length, completed=0;
+  var active=0, idx=0, CONCURRENCY=5;
+  
+  var overallTimeout=setTimeout(function(){
+    console.log('[NGP] OVERALL TIMEOUT - forcing completion');
+    sb.style.display='none';
+    done();
+  }, 60000);
+
+  function updateStatus(){
+    sb.textContent='Söker detaljplan '+completed+'/'+total+'...';
+  }
+
+  function finishOne(e, data){
+    try{
+      var result=data||{};
+      if(result.minSize&&!ov[e.address])ngpMin[e.address]=result.minSize;
+      if(result.planNamn)ngpPlan[e.address]=result.planNamn+(result.beteckning?' ('+result.beteckning+')':'');
+      if(result.docs&&result.docs.length)ngpDocs[e.address]=result.docs;
+      if(result.assetLinks&&result.assetLinks.length)ngpAssets[e.address]=result.assetLinks;
+      var geo2=geoC[e.address];
+      var old=document.querySelector('.card[data-addr="'+e.address.replace(/"/g,'\\"')+'"]');
+      if(old)old.parentNode.replaceChild(buildCard(e,geo2,!geo2),old);
+      var mk=mkC[e.address];
+      if(mk){
+        var mn=ov[e.address]||ngpMin[e.address]||null;
+        var a=assess(e.plotSize,mn,e.address);
+        if(isFav(e.address)){
+          var icon=L.divIcon({
+            className:'',
+            html:'<div class="star-marker">⭐</div>',
+            iconSize:[24,24],
+            iconAnchor:[12,24]
+          });
+          mk.setIcon(icon);
+        } else {
+          mk.setStyle({fillColor:CLR[a.c],color:'#000',weight:1.5,fillOpacity:1});
+        }
+        mk.setPopupContent(mkPopup(e,mn));
+      }
+    }catch(err){console.log('[NGP] finishOne error:',err.message);}
+    active--;completed++;updateStatus();
+    if(idx<entries.length)processOne();
+    else if(active===0){
+      clearTimeout(overallTimeout);
+      console.log('[NGP] Batch lookup complete:', completed, '/', total);
+      done();
+    }
+  }
+
+  function processOne(){
+    console.log('[NGP] processOne called, idx:', idx, 'entries.length:', entries.length);
+    if(idx>=entries.length){
+      console.log('[NGP] processOne: idx >= entries.length, returning');
+      if(active===0&&completed>=total){
+        clearTimeout(overallTimeout);
+        done();
+      }
+      return;
+    }
+    var e=entries[idx++];
+    console.log('[NGP] processOne: processing', e.address);
+    console.log('[NGP] processOne: checking geo for', e.address);
+    var geo=geoC[e.address];
+    if(!geo){
+      console.log('[NGP] Skipping (no geo):', e.address);
+      completed++;updateStatus();
+      if(idx<entries.length)processOne();
+      else if(active===0&&completed>=total){
+        clearTimeout(overallTimeout);
+        done();
+      }
+      return;
+    }
+    console.log('[NGP] processOne: checking muni code for', e.address);
+    if(!getMuniCode(e.address)){
+      console.log('[NGP] Skipping (no muni code):', e.address);
+      completed++;updateStatus();
+      if(idx<entries.length)processOne();
+      else if(active===0&&completed>=total){
+        clearTimeout(overallTimeout);
+        done();
+      }
+      return;
+    }
+    console.log('[NGP] processOne: starting search for', e.address);
+    active++;
+    var timedOut=false;
+    var tout=setTimeout(function(){
+      timedOut=true;
+      console.log('[NGP] TIMEOUT (10s):', e.address);
+      finishOne(e,null);
+    },10000);
+    searchNGP(geo.lat,geo.lon,e.address,function(data){
+      if(timedOut)return;
+      clearTimeout(tout);
+      finishOne(e,data);
+    });
+  }
+
+  updateStatus();
+  var startN=Math.min(CONCURRENCY,entries.length);
+  for(var i=0;i<startN;i++)processOne();
+  if(entries.length===0){
+    clearTimeout(overallTimeout);
+    done();
+  }
+}
+
+/* ── ASSESS ── */
+function assess(sz,mn,addr){
+  if(!sz)return{c:'grey',label:'Tomt saknas',tc:'#9ca3af',bg:'#1f2937',min:null,src:'none'};
+  if(!mn)return{c:'grey',label:'Saknar plandata',tc:'#9ca3af',bg:'#1f2937',min:null,src:'none'};
+  var src=ov[addr]?'manual':ngpMin[addr]?'ngp':'none';
+  if(sz>=mn*2)return{c:'green',label:'Troligen delbar',tc:'#86efac',bg:'#14532d',min:mn,src:src};
+  if(sz>=mn*1.5)return{c:'orange',label:'Gränsfall',tc:'#fcd34d',bg:'#451a03',min:mn,src:src};
+  return{c:'red',label:'Inte delbar',tc:'#fca5a5',bg:'#450a0a',min:mn,src:src};
+}
+
+/* ── PRICE BOX ── */
+function priceBox(e,mn){
+  if(!e.price||!e.plotSize)return'';
+  var mu=getMuni(e.address),p=Math.round(e.price/e.plotSize);
+  var pct=Math.round((p/mu.b-1)*100),sign=pct>=0?'+':'';
+  var div=mn&&e.plotSize>=mn*2,brd=mn&&!div&&e.plotSize>=mn*1.5;
+  var info='<b>'+p.toLocaleString('sv-SE')+' kr/m²</b> tomt ('+sign+pct+'% vs median '+mu.n+': '+mu.b.toLocaleString('sv-SE')+' kr/m²)';
+  if(!mn)return'<div class="pb pn">'+info+'. Ange min. tomtstorlek för prisanalys.</div>';
+  if(div&&pct>20)return'<div class="pb ph">⚠ Delbar men priset verkar inkludera delningstillägg (+'+Math.abs(pct)+'%). Räkna bort 10–25%.</div>';
+  if(div)return'<div class="pb po">✓ Delbar och priset verkar rimligt. '+info+'.</div>';
+  if(brd)return'<div class="pb pn">~ Gränsfall. '+info+'.</div>';
+  return'<div class="pb" style="background:#111;border:1px solid #333;color:#6b7280;">Ej delbar — delningstillägg ej relevant. '+info+'.</div>';
+}
+
+function profitBox(e,mn){
+  if(!mn||!e.price||!e.plotSize)return'';
+  var mu=getMuni(e.address);
+  var metrics=calculateDealMetrics(e,mn,mu.b);
+  if(!metrics)return'';
+  
+  var html='<div class="profit-box">';
+  html+='<div class="profit-title">💰 VINSTPOTENTIAL</div>';
+  html+='<div class="profit-row"><span class="profit-label">Antal tomter:</span><span class="profit-value">'+metrics.splitPotential+' st</span></div>';
+  html+='<div class="profit-row"><span class="profit-label">Värde efter delning:</span><span class="profit-value">'+fmt(metrics.totalValueIfSplit)+'</span></div>';
+  html+='<div class="profit-row"><span class="profit-label">Nuvarande pris:</span><span class="profit-value">'+fmt(e.price)+'</span></div>';
+  html+='<div class="profit-total">Potential: '+fmt(metrics.profitPotential)+' ('+metrics.profitPercent.toFixed(0)+'%)</div>';
+  html+='</div>';
+  return html;
+}
+
+function mkPopup(e,mn){
+  var a=assess(e.plotSize,mn,e.address),mu=getMuni(e.address);
+  var p=ppm(e);
+  var rows='';
+  if(e.plotSize)rows+='<div class="pr"><span class="pl">Tomtstorlek</span><span>'+e.plotSize+' m²</span></div>';
+  if(mn)rows+='<div class="pr"><span class="pl">Min. tomt</span><span>'+mn+' m²</span></div>';
+  if(e.price)rows+='<div class="pr"><span class="pl">Pris</span><span>'+fmt(e.price)+'</span></div>';
+  if(p)rows+='<div class="pr"><span class="pl">Kr/m² tomt</span><span>'+p.toLocaleString('sv-SE')+' <small style="color:#6b7280">(median: '+mu.b.toLocaleString('sv-SE')+')</small></span></div>';
+  rows+='<div class="pr"><span class="pl">Status</span><span style="color:'+CLR[a.c]+';font-weight:700">'+a.label+'</span></div>';
+  if(ngpPlan[e.address])rows+='<div class="pr"><span class="pl">Plan</span><span style="font-size:11px">'+ngpPlan[e.address]+'</span></div>';
+  return'<span class="pt">'+(isFav(e.address)?'⭐ ':'')+e.address+'</span>'+rows;
+}
+
+function escAttr(s){return s.replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function showErr(m){var e=document.getElementById('eb');e.textContent=m;e.style.display='block';}
+function hideErr(){document.getElementById('eb').style.display='none';}
+
+/* ── BUILD CARD ── */
+function buildCard(e,geo,noGeo){
+  var addr=e.address;
+  var mn=ov[addr]||ngpMin[addr]||null;
+  var a=assess(e.plotSize,mn,addr);
+  var sid='mi_'+addr.replace(/[^a-z0-9]/gi,'_');
+  var p=ppm(e);
+  var srcColor=ov[addr]?'#60a5fa':ngpMin[addr]?'#39ff14':'';
+  var srcText=ov[addr]?'✓':ngpMin[addr]?'NGP':'';
+  var minLabel=mn?mn+' m²':'–';
+  var minNote=srcText?'<span style="color:'+srcColor+';font-size:9px;margin-left:3px;font-weight:700">'+srcText+'</span>':'';
+
+  var dealBadge='';
+  if(mn&&e.price&&e.plotSize){
+    var mu=getMuni(addr);
+    var metrics=calculateDealMetrics(e,mn,mu.b);
+    if(metrics&&metrics.dealScore>=40){
+      var badgeClass='deal-'+metrics.dealRating;
+      var badgeText=metrics.dealScore>=80?'🔥 Toppaffär':metrics.dealScore>=60?'✨ Bra affär':'💡 OK affär';
+      dealBadge='<div class="deal-badge '+badgeClass+'">'+badgeText+'</div>';
+    }
+  }
+
+  /* FIXED: Direct PDF links that open in new tab */
+  var planSection='';
+  if(ngpDocs[addr]&&ngpDocs[addr].length){
+    // Already have docs - show them
+    var planDisplay=(ngpPlan[addr]||'Detaljplan');
+    planSection='<div class="plan-docs">';
+    planSection+='<div class="plan-name">📋 '+planDisplay+'</div>';
+    planSection+='<div class="doc-links">';
+    var docsJson=JSON.stringify(ngpDocs[addr]);
+    var encodedDocs=encodeURIComponent(docsJson);
+    var planNamn=(ngpPlan[addr]||'Detaljplan').replace(/'/g,"&#39;");
+    planSection+='<button class="doc-btn" data-docs="'+encodedDocs+'" data-plan="'+planNamn+'" onclick="openPDFEl(this)" style="cursor:pointer;background:#c8f135;color:#0e0f11;border:none;border-radius:4px;padding:6px 12px;font-size:11px;font-weight:600;">📄 Visa '+ngpDocs[addr].length+' dokument</button>';
+    planSection+='</div></div>';
+  } else if(ngpAssets[addr]&&ngpAssets[addr].length){
+    // Have asset links - lazy load on click
+    var planDisplay=(ngpPlan[addr]||'Detaljplan');
+    planSection='<div class="plan-docs">';
+    planSection+='<div class="plan-name">📋 '+planDisplay+'</div>';
+    planSection+='<div class="doc-links">';
+    var planNamn=(ngpPlan[addr]||'Detaljplan').replace(/'/g,"&#39;");
+    planSection+='<button class="doc-btn" data-addr="'+addr.replace(/"/g,'&quot;')+'" data-plan="'+planNamn+'" onclick="loadAndShowPDFs(this)" style="cursor:pointer;background:#c8f135;color:#0e0f11;border:none;border-radius:4px;padding:6px 12px;font-size:11px;font-weight:600;">📄 Ladda dokument</button>';
+    planSection+='</div></div>';
+  } else if(ngpPlan[addr]){
+    planSection='<div style="font-size:10px;color:#9ca3af;margin-bottom:7px;">📋 '+ngpPlan[addr]+' (inga dokument)</div>';
+  }
+
+  var cleanA=cleanAddr(addr);
+  var parts=addr.split(',').map(function(s){return s.trim();});
+  var street=parts[0]||'';
+  var city=parts.length>1?parts[parts.length-1]:'';
+  var hemnetId=getHemnetId(addr);
+  
+  var booliUrl='https://www.booli.se/slutpriser/'+encodeURIComponent(city.toLowerCase().replace(/\s+/g,''))+'/?objectType=Villa&minLivingArea=1&maxLivingArea=500';
+  
+  var hemnetUrl=hemnetId
+    ? 'https://www.hemnet.se/salda/bostader?item_types%5B%5D=villa&item_types%5B%5D=tomt&sold_age=12m&location_ids%5B%5D='+hemnetId
+    : 'https://www.hemnet.se/salda/bostader?item_types%5B%5D=villa&item_types%5B%5D=tomt&sold_age=12m&q='+encodeURIComponent(city);
+
+  var card=document.createElement('div');
+  card.className='card'+(isFav(addr)?' is-fav':'');
+  card.setAttribute('data-addr',addr);
+
+  card.innerHTML=
+    '<div class="card-head">'+
+      '<div class="dot" style="background:'+CLR[a.c]+';box-shadow:0 0 8px '+CLR[a.c]+',0 0 16px '+CLR[a.c]+'44"></div>'+
+      '<div class="ca">'+addr+'</div>'+
+      '<div class="bdg" style="background:'+a.bg+';color:'+a.tc+'">'+a.label+'</div>'+
+    '</div>'+
+    dealBadge+
+    '<div class="st">'+
+      '<div class="s"><strong>'+(e.plotSize?e.plotSize+' m²':'–')+'</strong>Tomtstorlek</div>'+
+      '<div class="s"><strong>'+minLabel+minNote+'</strong>Min. tomt (detaljplan)</div>'+
+      '<div class="s"><strong>'+fmt(e.price)+'</strong>Pris</div>'+
+      '<div class="s"><strong>'+(p?p.toLocaleString('sv-SE')+' kr/m²':'–')+'</strong>Pris per m² tomt</div>'+
+    '</div>'+
+    priceBox(e,mn)+
+    profitBox(e,mn)+
+    planSection+
+    '<div style="display:flex;gap:8px;margin-bottom:7px;">'+
+      '<a class="ml" style="margin:0;flex:1" href="'+booliUrl+'" target="_blank" rel="noopener">💰 Sålda – Booli</a>'+
+      '<a class="ml" style="margin:0;flex:1" href="'+hemnetUrl+'" target="_blank" rel="noopener">💰 Sålda – Hemnet</a>'+
+    '</div>'+
+    (noGeo?'<div style="font-size:10px;color:#6b7280;margin-bottom:5px">⚠ Adressen hittades ej på kartan</div>':'')+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:7px;border-top:1px solid #2a2d35;">'+
+      '<div class="mr" style="border:none;padding:0;flex:1;">'+
+        '<label>Min m² (detaljplan):</label>'+
+        '<input type="number" id="'+sid+'" value="'+(ov[addr]||'')+'" placeholder="t.ex. 600" min="50"/>'+
+        '<button class="mb" id="savebtn_'+sid+'" data-addr="'+escAttr(addr)+'" onclick="applyMin(event,this)">Spara</button>'+
+      '</div>'+
+      '<button onclick="toggleFav(event,this)" data-addr="'+escAttr(addr)+'" style="font-size:20px;background:none;border:none;cursor:pointer;color:'+(isFav(addr)?'#f59e0b':'#4b5563')+';padding:4px 8px;flex-shrink:0;">'+(isFav(addr)?'⭐':'☆')+'</button>'+
+    '</div>';
+
+    if(geo){
+    card.onclick=function(ev){
+      if(ev.target.tagName==='INPUT'||ev.target.tagName==='BUTTON'||ev.target.tagName==='A')return;
+      document.querySelectorAll('.card').forEach(function(c){c.classList.remove('sel');});
+      card.classList.add('sel');
+      if(map)map.setView([geo.lat,geo.lon],15);
+      var mk=mkC[addr];if(mk)mk.openPopup();
+    };
+  }
+  return card;
+}
+
+function applyMin(ev,btn){
+  ev.stopPropagation();
+  var addr=typeof btn==='string'?btn:btn.getAttribute('data-addr');
+  var sid='mi_'+addr.replace(/[^a-z0-9]/gi,'_');
+  var inp=document.getElementById(sid);if(!inp)return;
+  var v=parseInt(inp.value);if(!v||v<50)return;
+  ov[addr]=v;
+  var e=null;for(var i=0;i<allE.length;i++){if(allE[i].address===addr){e=allE[i];break;}}
+  if(!e)return;
+  var geo=geoC[addr]||null;
+  var old=document.querySelector('.card[data-addr="'+escAttr(addr)+'"]');
+  if(old)old.parentNode.replaceChild(buildCard(e,geo,!geo),old);
+  var mk=mkC[addr];
+  if(mk){
+    var a=assess(e.plotSize,v,addr);
+    if(isFav(addr)){
+      var icon=L.divIcon({
+        className:'',
+        html:'<div class="star-marker">⭐</div>',
+        iconSize:[24,24],
+        iconAnchor:[12,24]
+      });
+      mk.setIcon(icon);
+    } else {
+      mk.setStyle({fillColor:CLR[a.c]});
+    }
+    mk.setPopupContent(mkPopup(e,v));
+  }
+}
+
+function exportToCSV(){
+  if(!allE.length){showErr('Ingen data att exportera.');return;}
+  
+  var csv='Address,Plot Size (m²),Min Plot (m²),Price (SEK),Price/m²,Status,Split Potential,Value If Split,Profit Potential,Deal Score\n';
+  
+  allE.forEach(function(e){
+    var mn=ov[e.address]||ngpMin[e.address]||'';
+    var a=assess(e.plotSize,mn,e.address);
+    var mu=getMuni(e.address);
+    var metrics=mn&&e.price&&e.plotSize?calculateDealMetrics(e,mn,mu.b):null;
+    
+    csv+='"'+e.address.replace(/"/g,'""')+'",';
+    csv+=(e.plotSize||'')+',';
+    csv+=(mn||'')+',';
+    csv+=(e.price||'')+',';
+    csv+=(ppm(e)||'')+',';
+    csv+='"'+a.label+'",';
+    csv+=(metrics?metrics.splitPotential:'')+',';
+    csv+=(metrics?metrics.totalValueIfSplit:'')+',';
+    csv+=(metrics?metrics.profitPotential:'')+',';
+    csv+=(metrics?metrics.dealScore:'')+'\n';
+  });
+  
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download='landsplit_analys_'+new Date().toISOString().slice(0,10)+'.csv';
+  link.click();
+}
+
+/* CRITICAL FIX: Better address parsing to keep municipality */
+function parseText(raw){
+  if(/^https?:\/\/.*hemnet\.se.*$/i.test(raw.trim())){
+    showErr('Hemnet-länk: kopiera och klistra in texten från sidan istället.');
+    return [];
+  }
+
+  var rawLines=raw.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  var filtered=[], inSold=false;
+
+  function isUIJunk(ln){
+    return /^(hoppa till|sök bostad|sök mäklare|sälja bostad|nyheter|bygga hus|min bostad|logga in|bevaka sökning|kartval|karta i fullskärm|sortera på|nyast först|så sorteras|kommande \d|till salu \d|slutpriser \d|bevaka den här|återvänder du|spara din sökning|artiklar från|bild för artikel|sponsrad av|nyproduktion|prenumerera|mäklaretipset|mäklartipset|profilfoto|plus$|premium|balkong|uteplats)/i.test(ln)
+      || /^broker-tip/i.test(ln)
+      || /^\d+ av \d+$/.test(ln)
+      || /^\d+ dagar?$/i.test(ln)
+      || /^(mån|tis|ons|tor|fre|lör|sön)\b.*kl \d/i.test(ln);
+  }
+
+  for(var fi=0;fi<rawLines.length;fi++){
+    var fl=rawLines[fi];
+    if(isUIJunk(fl))continue;
+    if(/^såld/i.test(fl)||/^slutpris:/i.test(fl)||/^sålt av oss/i.test(fl)||/kontakta oss om/i.test(fl)||/^lokala mäklare/i.test(fl)){
+      inSold=true; continue;
+    }
+    if(inSold){
+      if(/^(mån|tis|ons|tor|fre|lör|sön)\b/i.test(fl)||/- bild \d/i.test(fl)||/^\d+ dagar?$/i.test(fl)||/^(idag|igår)$/i.test(fl)||/^\d+ rum (villa|fritidshus|tomt|stuga)/i.test(fl)){
+        inSold=false;
+        continue;
+      }
+      continue;
+    }
+    filtered.push(fl);
+  }
+
+  var entries=[], lines=filtered;
+  var reA=/^([A-ZÅÄÖ][a-zåäöA-ZÅÄÖ \-]{1,60})\s+(\d{1,4}[A-Za-z]?)\s*$/;
+  var reP=/(\d[\d\s]*(?:[,.]\d+)?)\s*(mnkr|miljoner|mkr|kr)\b/i;
+  /* CRITICAL FIX: Only match tomt size with "tomt" keyword */
+  var reT1=/(\d[\d\s]+)\s*m[²2]\s+tomt\b/i;
+  var reT2=/tomt[a-zåäö]*\s*[:\s]\s*(\d[\d\s]*)\s*m[²2]/i;
+  var reT3=/(\d[\d\s,]+)\s+(?:m[²2]\s+)?tomt\b/i;
+  var addr=null,city=null,price=null,plot=null;
+
+  function flush(){
+    if(addr){
+      var fullAddr=addr;
+      if(city)fullAddr+=', '+city;
+      entries.push({address:fullAddr,price:price,plotSize:plot});
+      console.log('[PARSE] Parsed entry:', fullAddr, 'price:', price, 'plot:', plot);
+    }
+    addr=null;city=null;price=null;plot=null;
+  }
+
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i];
+    
+    var mA=ln.match(reA);
+    if(mA){
+      flush();
+      addr=mA[1].trim()+' '+mA[2];
+      city=null;price=null;plot=null;
+      continue;
+    }
+    
+    if(/^(Täby|Nacka|Lidingö|Solna|Stockholm|Danderyd|Sundbyberg|Järfälla|Huddinge|Haninge|Tyresö|Värmdö|Ekerö|Österåker|Vaxholm|Norrtälje|Sigtuna|Upplands-Bro|Södertälje|Nynäshamn|Sollentuna|Vallentuna|Upplands-Väsby|Nykvarn|Botkyrka|Salem|Ingarö|Gustavsberg|Bodatorp|Fågelvik)\b/i.test(ln)){
+      if(!city)city=ln.trim();
+      continue;
+    }
+    
+    if(/kommun/.test(ln)){
+      var parts=ln.split(/[,\s]+/);
+      for(var pi=0;pi<parts.length;pi++){
+        if(/^(Värmdö|Täby|Nacka|Stockholm|Solna)/.test(parts[pi])){
+          if(!city||city.indexOf('kommun')===-1)city=parts[pi];
+        }
+      }
+      continue;
+    }
+    
+    var mP=ln.match(reP);
+    if(mP&&!price){
+      var n=parseFloat(mP[1].replace(/\s/g,'').replace(',','.'));
+      var u=mP[2].toLowerCase();
+      if(u==='mnkr'||u==='miljoner')n*=1e6;
+      else if(u==='mkr')n*=1000;
+      price=Math.round(n);
+      continue;
+    }
+    
+    /* CRITICAL FIX: ONLY capture if line contains "tomt" keyword */
+    if(!plot){
+      var mT=ln.match(reT1)||ln.match(reT2)||ln.match(reT3);
+      if(mT){
+        var v=parseInt(mT[1].replace(/[\s,]/g,''));
+        if(v>=100&&v<=50000){
+          plot=v;
+          console.log('[PARSE] Found tomt:', plot, 'from line:', ln);
+        }
+      }
+    }
+  }
+  flush();
+
+  var seen={}, out=[];
+  entries.forEach(function(e){
+    var key=e.address.toLowerCase().split(',')[0].trim();
+    var existing=seen[key];
+    if(!existing){seen[key]=e;out.push(e);}
+    else if((e.price||e.plotSize)&&(!existing.price&&!existing.plotSize)){
+      var idx=out.indexOf(existing);
+      if(idx>=0)out[idx]=e;
+      seen[key]=e;
+    }
+  });
+
+  console.log('[PARSE] Final parsed entries:', out);
+  return out;
+}
+
+function cleanAddr(addr){
+  var p=addr.split(',').map(function(s){return s.trim();});
+  if(p.length>=3)return p[0]+', '+p[p.length-1].replace(/\s*kommun\s*/i,'').trim();
+  return addr.replace(/\s*kommun\s*/i,'').trim();
+}
+
+/* CRITICAL FIX: Better geocoding with full address including municipality */
+function nominatimOne(addr,cb){
+  console.log('[GEO] Nominatim geocoding:', addr);
+  var q=encodeURIComponent(addr+', Sverige');
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=se&q='+q)
+  .then(function(r){return r.ok?r.json():[];})
+  .then(function(d){
+    if(d&&d[0]){
+      console.log('[GEO] Nominatim result:', d[0].display_name, d[0].lat, d[0].lon);
+      cb({lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)});
+    } else{
+      console.log('[GEO] Nominatim found nothing for:', addr);
+      cb(null);
+    }
+  })
+  .catch(function(err){console.log('[GEO] Nominatim error:', err);cb(null);});
+}
+function nominatimAll(entries,coords,idx,done){
+  if(idx>=entries.length){done(coords);return;}
+  var sb=document.getElementById('sb');
+  if(sb)sb.textContent='Geocoding '+(idx+1)+'/'+entries.length+': '+entries[idx].address+'...';
+  nominatimOne(entries[idx].address,function(geo){
+    if(geo)coords[entries[idx].address]=geo;
+    setTimeout(function(){nominatimAll(entries,coords,idx+1,done);},800);
+  });
+}
+
+function geocodeAll(entries,done){
+  console.log('[GEO] Starting Nominatim geocoding for', entries.length, 'addresses');
+  nominatimAll(entries,{},0,done);
+}
+
+function doClear(){
+  document.getElementById('txt').value='';
+  document.getElementById('cards').innerHTML='<div class="emp">Klistra in text och tryck Kör analys.</div>';
+  hideErr();
+  var sb=document.getElementById('sb');
+  sb.style.display='none';
+  sb.textContent='';
+  var btn=document.getElementById('runbtn');
+  btn.disabled=false;
+  if(mLayer)mLayer.clearLayers();
+  allE=[];mkC={};ngpMin={};ngpPlan={};ngpDocs={};geoC={};
+  if(map)map.setView([59.33,18.07],9);
+  updateFavMarkers();
+}
+
+function doLogin(){
+  if(document.getElementById('pw').value!=='FiRe2026!'){
+    document.getElementById('lerr').style.display='block';return;
+  }
+  document.getElementById('login').style.display='none';
+  if(typeof L==='undefined'){showErr('Leaflet laddades inte.');return;}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    var mapEl=document.getElementById('map');
+    if(mapEl.offsetHeight<100)mapEl.style.height='500px';
+    map=L.map('map',{zoomControl:true}).setView([59.33,18.07],9);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+    mLayer=L.layerGroup().addTo(map);
+    favLayer=L.layerGroup().addTo(map);
+    map.invalidateSize();
+    updateFavMarkers();
+  });});
+  loadFavs();
+}
+
+function doRun(){
+  console.log('[MAIN] === Starting analysis ===');
+  var raw=document.getElementById('txt').value.trim();
+  hideErr();
+  if(!raw){showErr('Klistra in text först.');return;}
+  var parsed=parseText(raw);
+  if(!parsed.length){showErr('Inga adresser hittades.');return;}
+
+  allE=parsed;
+  if(mLayer)mLayer.clearLayers();
+  mkC={};ngpMin={};ngpPlan={};ngpDocs={};geoC={};
+
+  document.getElementById('cards').innerHTML='';
+  var btn=document.getElementById('runbtn'),sb=document.getElementById('sb');
+  btn.disabled=true;sb.style.display='block';sb.textContent='Hämtar koordinater...';
+
+  var bounds=[];
+
+  function addCardAndMarker(e, geo){
+    var placed=false;
+    console.log('[MAIN] Adding card for:', e.address, 'geo:', geo);
+    if(geo&&geo.lat&&geo.lon&&parseFloat(geo.lat)>54&&parseFloat(geo.lat)<70){
+      geoC[e.address]={lat:parseFloat(geo.lat),lon:parseFloat(geo.lon)};
+      bounds.push([parseFloat(geo.lat),parseFloat(geo.lon)]);
+      var mn=ov[e.address]||null,a=assess(e.plotSize,mn,e.address);
+      
+      var mk;
+      if(isFav(e.address)){
+        var icon=L.divIcon({
+          className:'',
+          html:'<div class="star-marker">⭐</div>',
+          iconSize:[24,24],
+          iconAnchor:[12,24]
+        });
+        mk=L.marker([parseFloat(geo.lat),parseFloat(geo.lon)],{icon:icon}).addTo(mLayer);
+      } else {
+        mk=L.circleMarker([parseFloat(geo.lat),parseFloat(geo.lon)],{
+          radius:13,fillColor:CLR[a.c],
+          color:'#000',weight:1.5,fillOpacity:1
+        }).addTo(mLayer);
+      }
+      
+      mk.bindPopup(mkPopup(e,mn),{maxWidth:280});
+      (function(addr){
+        mk.on('click',function(){
+          document.querySelectorAll('.card').forEach(function(c){c.classList.remove('sel');});
+          var card=document.querySelector('.card[data-addr="'+addr.replace(/"/g,'\\"')+'"]');
+          if(card){card.classList.add('sel');card.scrollIntoView({behavior:'smooth',block:'nearest'});}
+        });
+      })(e.address);
+      mkC[e.address]=mk;
+      placed=true;
+    }
+    document.getElementById('cards').appendChild(buildCard(e,geoC[e.address]||null,!placed));
+  }
+
+  geocodeAll(parsed,function(coords){
+    console.log('[MAIN] Geocoding complete, coords:', Object.keys(coords).length);
+    for(var i=0;i<parsed.length;i++){
+      addCardAndMarker(parsed[i], coords[parsed[i].address]||null);
+    }
+    
+    console.log('[MAIN] Starting NGP lookup with debugging...');
+    lookupNGPForAll(parsed,function(){
+      console.log('[MAIN] NGP lookup finished');
+      sb.style.display='none';btn.disabled=false;
+      updateFavMarkers();
+      if(map&&bounds.length){
+        map.invalidateSize();
+        setTimeout(function(){
+          if(bounds.length===1)map.setView(bounds[0],14);
+          else{try{map.fitBounds(bounds,{padding:[40,40]});}catch(x){}}
+        },400);
+      }
+    });
+  });
+}
+
+/* ── LAZY LOAD PDFs ── */
+function loadAndShowPDFs(btn){
+  var addr=btn.getAttribute('data-addr');
+  var planNamn=btn.getAttribute('data-plan');
+  
+  if(!ngpAssets[addr]||!ngpAssets[addr].length){
+    console.log('[LAZY] No assets for:', addr);
+    return;
+  }
+  
+  // Show loading state
+  btn.textContent='⏳ Laddar...';
+  btn.disabled=true;
+  
+  var assetLinks=ngpAssets[addr];
+  var docs=[];
+  var fetchedCount=0;
+  
+  console.log('[LAZY] Fetching', assetLinks.length, 'assets for:', addr);
+  
+  getNGPToken(function(token){
+    if(!token){
+      btn.textContent='❌ Fel';
+      return;
+    }
+    
+    assetLinks.forEach(function(assetLink){
+      fetchNGP(assetLink.href, token, function(assetData){
+        fetchedCount++;
+        
+        if(assetData){
+          if(assetData.isPDF){
+            var title=assetLink.title||'Plankarta';
+            if(title==='Detaljplan'||title==='Asset'){
+              var url=assetData.url.toLowerCase();
+              if(url.indexOf('planbeskrivning')!==-1)title='Planbeskrivning';
+              else if(url.indexOf('plankarta')!==-1)title='Plankarta';
+              else if(url.indexOf('illustration')!==-1)title='Illustration';
+              else title='Planhandling';
+            }
+            docs.push({title:title,href:assetData.url});
+          } else {
+            if(assetData.planhandlingar && Array.isArray(assetData.planhandlingar)){
+              assetData.planhandlingar.forEach(function(ph){
+                if(ph.fil && ph.fil.length>0){
+                  ph.fil.forEach(function(fil){
+                    if(fil.lank){
+                      var title=fil.namn||ph.handlingstyp||'Dokument';
+                      docs.push({title:title,href:fil.lank});
+                    }
+                  });
+                }
+              });
+            }
+          }
+        }
+        
+        // When all fetched, store and open
+        if(fetchedCount===assetLinks.length){
+          ngpDocs[addr]=docs;
+          delete ngpAssets[addr]; // Remove assets, we have docs now
+          console.log('[LAZY] Loaded', docs.length, 'documents');
+          
+          // Rebuild card to show loaded docs
+          var e=allE.find(function(entry){return entry.address===addr;});
+          if(e){
+            var geo2=geoC[addr];
+            var old=document.querySelector('.card[data-addr="'+addr.replace(/"/g,'\\"')+'"]');
+            if(old)old.parentNode.replaceChild(buildCard(e,geo2,!geo2),old);
+          }
+          
+          // Open PDF panel
+          openPDF(planNamn, docs);
+        }
+      });
+    });
+  });
+}
+
+/* PDF PREVIEW PANEL */
+function openPDFEl(el) {
+  var docs=[];
+  try{docs=JSON.parse(decodeURIComponent(el.getAttribute('data-docs')||'[]'));}catch(e){}
+  var planNamn=el.getAttribute('data-plan')||'Detaljplan';
+  openPDF(planNamn, docs);
+}
+function openPDF(planNamn, docs) {
+  var panel = document.getElementById('pdfpanel');
+  var title = document.getElementById('pdf-title');
+  var tabs = document.getElementById('pdf-tabs');
+  
+  title.textContent = planNamn || 'Detaljplan';
+  tabs.innerHTML = '';
+  
+  if(!docs||!docs.length){
+    tabs.innerHTML='<div style="padding:16px;"><span style="font-size:12px;color:#6b7280;">Inga PDF-dokument tillgängliga</span></div>';
+    panel.style.display='flex';
+    return;
+  }
+  
+  // Create a list of document links
+  var docList = document.createElement('div');
+  docList.style.cssText = 'padding:16px;display:flex;flex-direction:column;gap:8px;';
+  
+  docs.forEach(function(doc){
+    var link = document.createElement('a');
+    link.href = doc.href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = '📄 ' + doc.title;
+    link.style.cssText = 'display:block;padding:12px;background:#1e2433;border:1px solid #374151;border-radius:6px;color:#e8eaf0;text-decoration:none;font-size:13px;transition:all 0.2s;';
+    link.onmouseover = function(){ this.style.background='#2a2d35'; this.style.borderColor='#c8f135'; };
+    link.onmouseout = function(){ this.style.background='#1e2433'; this.style.borderColor='#374151'; };
+    docList.appendChild(link);
+  });
+  
+  tabs.appendChild(docList);
+  
+  panel.style.display='flex';
+  document.getElementById('map').style.marginRight='480px';
+  if(map)map.invalidateSize();
+}
+function closePDF(){
+  document.getElementById('pdfpanel').style.display='none';
+  document.getElementById('map').style.marginRight='0';
+  if(map)map.invalidateSize();
+}
+
+/* ── WMS DETALJPLAN OVERLAY ── */
+var DP_WMS_URL='https://api.lantmateriet.se/distribution/geodatakatalog/visning/v1/detaljplan/v1/wms';
+var dpLayer=null, wmsOn=false;
+
+function toggleWMS(){
+  var btn=document.getElementById('wms-toggle');
+  if(!map)return;
+  if(wmsOn){
+    if(dpLayer){map.removeLayer(dpLayer);dpLayer=null;}
+    wmsOn=false;
+    if(btn){btn.style.background='';btn.style.color='';}
+    map.off('click',onMapClickWMS);
+    return;
+  }
+  getNGPToken(function(token){
+    if(!token){showErr('Kunde inte hämta token för detaljplanlager.');return;}
+    var wmsBase=DP_WMS_URL+'?access_token='+encodeURIComponent(token);
+    dpLayer=L.tileLayer.wms(wmsBase,{
+      layers:'detaljplan',
+      format:'image/png',
+      transparent:true,
+      version:'1.1.1',
+      opacity:0.6,
+      tileSize:512,
+      updateWhenIdle:true,
+      minZoom:1,
+      maxZoom:22,
+      attribution:'© Lantmäteriet'
+    }).addTo(map);
+    wmsOn=true;
+    if(btn){btn.style.background='#c8f135';btn.style.color='#0e0f11';}
+    map.on('click',onMapClickWMS);
+  });
+}
+
+function onMapClickWMS(e){
+  if(!wmsOn){
+    console.log('[WMS] Click ignored - layer not enabled');
+    return;
+  }
+  console.log('[WMS] Click at:', e.latlng);
+  var lat=e.latlng.lat,lon=e.latlng.lng;
+  var sz=map.getSize(),b=map.getBounds();
+  var pt=map.latLngToContainerPoint(e.latlng);
+
+  function lngToMX(lg){return lg*20037508.34/180;}
+  function latToMY(lt){return Math.log(Math.tan((90+lt)*Math.PI/360))/(Math.PI/180)*20037508.34/180;}
+  var bbox3857=lngToMX(b.getWest())+','+latToMY(b.getSouth())+','+lngToMX(b.getEast())+','+latToMY(b.getNorth());
+
+  getNGPToken(function(token){
+    if(!token)return;
+    var url=DP_WMS_URL
+      +'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo'
+      +'&QUERY_LAYERS=detaljplan&LAYERS=detaljplan'
+      +'&INFO_FORMAT=application/json&FEATURE_COUNT=3'
+      +'&X='+Math.round(pt.x)+'&Y='+Math.round(pt.y)
+      +'&BBOX='+bbox3857+'&WIDTH='+sz.x+'&HEIGHT='+sz.y
+      +'&SRS=EPSG:3857';
+
+    console.log('[WMS] GetFeatureInfo URL:', url.substring(0,200));
+
+    fetch(url,{headers:{'Accept':'application/json','Authorization':'Bearer '+token}})
+    .then(function(r){
+      console.log('[WMS] Response status:', r.status);
+      return r.ok?r.json():null;
+    })
+    .then(function(gfiData){
+      console.log('[WMS] GFI response:', gfiData);
+
+      if(!gfiData||!gfiData.features||!gfiData.features.length){
+        L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(
+          '<div style="font-size:12px;padding:8px;color:#9ca3af;">Ingen detaljplan på denna plats</div>'
+        ).openOn(map);
+        return;
+      }
+
+      var props=gfiData.features[0].properties||{};
+      console.log('[WMS] Plan properties:', props);
+      var namn=props.plannamn||props.plannr||props.namn||props.beteckning
+        ||props.PLANNAMN||props.PLANNR||props.BETECKNING||'Okänd plan';
+      var bet=props.beteckning||props.planidentitet||props.BETECKNING||'';
+      var status=props.status||props.STATUS||props.planstatus||'';
+
+      var html='<div style="font-size:12px;min-width:180px;padding:4px;">'
+        +'<b style="color:#c8f135;font-size:13px;">'+namn+'</b><br>'
+        +(bet?'<span style="color:#9ca3af;">Beteckning: </span>'+bet+'<br>':'')
+        +(status?'<span style="color:#9ca3af;">Status: </span>'+status+'<br>':'')
+        +'<span style="color:#9ca3af;font-size:11px;">Söker dokument...</span></div>';
+      var popup=L.popup({maxWidth:320}).setLatLng(e.latlng).setContent(html).openOn(map);
+
+      // Detect kommun from coordinates before searching NGP
+      detectKommunFromCoordinates(lat, lon, function(detectedKommun) {
+        console.log('[WMS] Using kommun:', detectedKommun);
+        
+        searchNGP(lat,lon,detectedKommun,function(result){
+          console.log('[WMS] NGP result:', result);
+          var docHtml='';
+          if(result&&result.docs&&result.docs.length){
+            var docsJson=JSON.stringify(result.docs);
+            var encodedDocs=encodeURIComponent(docsJson);
+            var planNamn=(result.planNamn||'Detaljplan').replace(/'/g,"&#39;");
+            docHtml='<div style="margin-top:6px;">';
+            docHtml+='<button data-docs="'+encodedDocs+'" data-plan="'+planNamn+'" onclick="openPDFEl(this);return false;" style="cursor:pointer;background:#c8f135;color:#0e0f11;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:600;margin-top:4px;">📄 Visa '+result.docs.length+' dokument</button>';
+            docHtml+='</div>';
+          }
+          var minHtml=result&&result.minSize
+            ?'<div style="margin-top:4px;font-size:11px;color:#9ca3af;">Min tomt: <b style="color:#c8f135;">'+result.minSize+' m²</b></div>'
+            +'<div style="font-size:10px;color:#6b7280;margin-top:2px;">Kommun: '+detectedKommun+'</div>':
+            '';
+          popup.setContent(
+            '<div style="font-size:12px;min-width:180px;padding:4px;">'
+            +'<b style="color:#c8f135;font-size:13px;">'+namn+'</b><br>'
+            +(bet?'<span style="color:#9ca3af;">Beteckning: </span>'+bet+'<br>':'')
+            +(status?'<span style="color:#9ca3af;">Status: </span>'+status+'<br>':'')
+            +docHtml+minHtml
+            +'</div>'
+          );
+        });
+      });
+    })
+    .catch(function(err){console.log('[WMS] GFI error:',err);});
+  });
+}
+</script>
+</body>
+</html>
